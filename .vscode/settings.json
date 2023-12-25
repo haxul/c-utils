@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "cstdlib": "c",
+        "stdio.h": "c",
+        "hash_map.h": "c",
+        "compare": "c",
+        "cstdint": "c",
+        "format": "c"
+    }
+}

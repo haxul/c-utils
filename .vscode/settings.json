@@ -5,6 +5,10 @@
         "hash_map.h": "c",
         "compare": "c",
         "cstdint": "c",
-        "format": "c"
+        "format": "c",
+        "string.h": "c",
+        "types.h": "c",
+        "stdbool.h": "c",
+        "stdlib.h": "c"
     }
 }

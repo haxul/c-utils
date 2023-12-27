@@ -1,5 +1,6 @@
-OBJS=src/hash_map.c
-CFLAGS=-g -Wall -std=c99 -levent
+OBJS=src/heap_hash_map.c
+CFLAGS=-g -Wall -std=c11 -Wno-pointer-to-int-cast
+  
 CC=gcc
 
 all: build

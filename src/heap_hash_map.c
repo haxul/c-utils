@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool equals(char* k1, char* k2) {
+bool equals(const char* k1, const char* k2) {
     if (k1 == k2) {
         return true;
     }
@@ -14,7 +14,7 @@ bool equals(char* k1, char* k2) {
         return false;
     }
 
-    size_t k1_len = strlen(k1);
+    const size_t k1_len = strlen(k1);
     if (k1_len != strlen(k2)) {
         return false;
     }

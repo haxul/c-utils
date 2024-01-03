@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAP_INIT_SIZE 1
+#define MAP_INIT_SIZE 2
 
 typedef struct entry_node {
     void* val;
@@ -14,15 +14,18 @@ typedef struct entry_node {
 
 typedef struct hash_map {
     struct entry_node* bucket_arr;
-    uint32_t size;
-    uint32_t used;
+    uint32_t entries_size;
+    uint32_t used_buckets;
+    uint32_t buckets_size;
 } hash_map;
 
 struct hash_map* new_hash_map();
 
-void remove_hash_map(struct hash_map* hm);
+void free_hash_map(struct hash_map* hm);
 
 void* get_hash_map(struct hash_map* hm, char* key);
+
+void remove_key_hash_map(struct hash_map* hm, char* key);
 
 /*
  * hm - pointer to hashmap

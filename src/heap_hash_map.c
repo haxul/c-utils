@@ -10,6 +10,12 @@ uint32_t _put_hash_map(hash_map* hm, char* key, void* val, entry_node* existed_n
 
 uint32_t _resize_hash_map(hash_map* hm, const int32_t new_size);
 
+entry_node* _create_entry_node_with_key_copy(char* key, void* val);
+
+bool _equals(const char* k1, const char* k2);
+
+uint32_t _hashcode(char* key);
+
 entry_node* _to_entry_node_list(hash_map* hm) {
     entry_node dummy_node;
     dummy_node.next = NULL;

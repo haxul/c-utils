@@ -4,18 +4,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-entry_node* _create_entry_node_no_key_copy(char* key, void* val) {
-    entry_node* const new_entry_node = malloc(sizeof(entry_node));
-    if (new_entry_node == NULL) {
-        return NULL;
+uint32_t _put_hash_map(hash_map* hm, char* key, void* val, entry_node* existed_node);
+
+uint32_t _resize_hash_map(hash_map* hm, const int32_t new_size);
+
+entry_node* _to_entry_node_list(hash_map* hm) {
+    entry_node dummy_node;
+    dummy_node.next = NULL;
+    entry_node* cur_node;
+    entry_node* t_ptr = &dummy_node;
+    for (int i = 0; i < hm->buckets_size; ++i) {
+        cur_node = hm->bucket_arr[i].next;
+        while (cur_node != NULL) {
+            t_ptr->next = cur_node;
+            t_ptr = t_ptr->next;
+            cur_node = cur_node->next;
+        }
+        hm->bucket_arr[i].next = NULL;
     }
 
-    new_entry_node->key = key;
-    new_entry_node->val = val;
-    new_entry_node->next = NULL;
-
-    return new_entry_node;
+    hm->entries_size = 0;
+    hm->used_buckets = 0;
+    return dummy_node.next;
 }
 
 entry_node* _create_entry_node_with_key_copy(char* key, void* val) {
@@ -129,10 +141,13 @@ void free_hash_map(hash_map* hm) {
     free(hm);
 }
 
-uint32_t _put_hash_map(hash_map* hm, char* key, void* val,
-                       entry_node* (*create_node_fun)(char*, void*)) {
+uint32_t _put_hash_map(hash_map* hm, char* key, void* val, entry_node* existed_node) {
     if (val == NULL || key == NULL) {
         return 1;
+    }
+    const int treashold = (int)ceil(hm->buckets_size * 0.75);
+    if (hm->used_buckets >= treashold) {
+        _resize_hash_map(hm, hm->buckets_size * 2);
     }
 
     const int target_idx = _hashcode(key) % hm->buckets_size;
@@ -143,7 +158,7 @@ uint32_t _put_hash_map(hash_map* hm, char* key, void* val,
         // no nodes are inserted in this bucket
         hm->used_buckets++;
         hm->entries_size++;
-        cur_node = create_node_fun(key, val);
+        cur_node = existed_node == NULL ? _create_entry_node_with_key_copy(key, val) : existed_node;
         if (cur_node == NULL) {
             return 3;
         }
@@ -166,7 +181,10 @@ uint32_t _put_hash_map(hash_map* hm, char* key, void* val,
     }
 
     // entry_node is not found, so let's insert new one in the bucket
-    entry_node* new_entry_node = create_node_fun(key, val);
+    // or if existed node is passed as argument use it
+    entry_node* new_entry_node = existed_node == NULL
+                                     ? _create_entry_node_with_key_copy(key, val)
+                                     : existed_node;
     entry_node* tmp = head->next;
     head->next = new_entry_node;
     new_entry_node->next = tmp;
@@ -176,9 +194,24 @@ uint32_t _put_hash_map(hash_map* hm, char* key, void* val,
 }
 
 uint32_t put_hash_map(hash_map* hm, char* key, void* val) {
-    return _put_hash_map(hm, key, val, _create_entry_node_with_key_copy);
+    return _put_hash_map(hm, key, val, NULL);
 }
 
+uint32_t _resize_hash_map(hash_map* hm, const int32_t new_size) {
+    entry_node* node = _to_entry_node_list(hm);
+    hm->bucket_arr = realloc(hm->bucket_arr, sizeof(entry_node) * new_size);
+    if (hm->bucket_arr == NULL) {
+        return -1;
+    }
+    memset(hm->bucket_arr, 0, sizeof(entry_node) * new_size);
+    while (node != NULL) {
+        _put_hash_map(hm, node->key, node->val, node);
+        node = node->next;
+    }
+
+    hm->buckets_size = new_size;
+    return 0;
+}
 
 void* get_hash_map(struct hash_map* hm, char* key) {
     if (hm == NULL || key == NULL || hm->bucket_arr == NULL) {
@@ -195,28 +228,4 @@ void* get_hash_map(struct hash_map* hm, char* key) {
     }
 
     return NULL;
-}
-
-entry_node* _to_entry_node_list(hash_map* hm) {
-    entry_node dummy_node;
-    dummy_node.next = NULL;
-    entry_node* cur_node_ptr;
-    entry_node* t_ptr = &dummy_node;
-    for (int i = 0; i < hm->buckets_size; ++i) {
-        cur_node_ptr = hm->bucket_arr[i].next;
-        while (cur_node_ptr != NULL) {
-            t_ptr->next = cur_node_ptr;
-            t_ptr = t_ptr->next;
-            cur_node_ptr = cur_node_ptr->next;
-        }
-        hm->bucket_arr[i].next = NULL;
-    }
-
-    hm->entries_size = 0;
-    hm->used_buckets = 0;
-    return dummy_node.next;
-}
-
-void _resize_hash_map(hash_map* hm, int32_t new_size) {
-    //TODO
 }

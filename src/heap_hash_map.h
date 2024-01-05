@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAP_INIT_SIZE 2
+#define MAP_INIT_SIZE 1
 
 typedef struct entry_node {
     void* val;

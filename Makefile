@@ -1,5 +1,5 @@
 OBJS=src/heap_hash_map.c
-CFLAGS=-g -Wall -std=c11 -Wno-pointer-to-int-cast
+CFLAGS=-g -Wall -lm -std=c11 -Wno-pointer-to-int-cast
   
 CC=gcc
 

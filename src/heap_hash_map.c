@@ -155,8 +155,8 @@ uint32_t _put_hash_map(hash_map* hm, char* key, void* val, entry_node* existed_n
     if (hm->used_buckets >= treashold) {
         _resize_hash_map(hm, hm->buckets_size * 2);
     }
-
-    const int target_idx = _hashcode(key) % hm->buckets_size;
+    const int32_t code = _hashcode(key);
+    const int target_idx = code % hm->buckets_size;
     entry_node* const head = &hm->bucket_arr[target_idx];
     entry_node* cur_node = head->next;
 
@@ -210,12 +210,12 @@ uint32_t _resize_hash_map(hash_map* hm, const int32_t new_size) {
         return -1;
     }
     memset(hm->bucket_arr, 0, sizeof(entry_node) * new_size);
+    hm->buckets_size = new_size;
     while (node != NULL) {
         _put_hash_map(hm, node->key, node->val, node);
         node = node->next;
     }
 
-    hm->buckets_size = new_size;
     return 0;
 }
 

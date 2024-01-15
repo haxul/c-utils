@@ -1,7 +1,10 @@
 #include "src/heap_hash_map.h"
+#include "src/count_uniq_elements.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#define FILE_PATH "/home/haxul/Development/clanguage/hash-map/test_data/nums.txt"
 
 char* stringh(char* str) {
     size_t len = strlen(str);
@@ -12,28 +15,23 @@ char* stringh(char* str) {
     return new_str;
 }
 
+uint32_t generate_file(const char* file_path) {
+    srand(time(NULL));
+    uint32_t count = 0;
+    const uint32_t size = 20;
+    FILE* file = fopen(file_path, "wa");
+    if (file == NULL) {
+        perror("cannot open file\n");
+        return 1;
+    }
+    while (count < size) {
+        fprintf(file, "%d\n", rand() % 10);
+        count += 1;
+    }
+}
+
 
 int main() {
-    hash_map* hm = new_hash_map();
-    if (hm == NULL) return 1;
-
-    char* one = "1";
-    char* two = "2";
-    char* three = "3";
-
-    char* hello = stringh("hello");
-    char* world = stringh("world");
-    char* privet = stringh("privet");
-
-
-    put_hash_map(hm, one, hello);
-    put_hash_map(hm, two, world);
-    put_hash_map(hm, three, privet);
-
-    printf("1 ->%s\n", (char *)get_hash_map(hm, "1"));
-    printf("2 ->%s\n", (char *)get_hash_map(hm, "2"));
-    printf("3 ->%s\n", (char *)get_hash_map(hm, "3"));
-    free_hash_map(hm);
-
+    count_uniq_elements(FILE_PATH);
     return 0;
 }

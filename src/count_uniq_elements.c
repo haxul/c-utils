@@ -70,7 +70,6 @@ uint64_t count_uniq_elements(const char* const file_path) {
             qsort(chunk_buf, CHUNK_SIZE, sizeof(int), compare);
             save_to_file(WORK_DIR, chunk_buf, CHUNK_SIZE, file_count++);
             chunk_idx = 0;
-            memset(chunk_buf, 0, CHUNK_SIZE);
         }
     }
 

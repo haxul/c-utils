@@ -18,16 +18,18 @@ char* stringh(char* str) {
 uint32_t generate_file(const char* file_path) {
     srand(time(NULL));
     uint32_t count = 0;
-    const uint32_t size = 20;
+    const uint32_t size = 80;
     FILE* file = fopen(file_path, "wa");
     if (file == NULL) {
         perror("cannot open file\n");
         return 1;
     }
     while (count < size) {
-        fprintf(file, "%d\n", rand() % 10);
+        fprintf(file, "%d\n", rand() % 100);
         count += 1;
     }
+
+    return 0;
 }
 
 

@@ -1,11 +1,11 @@
 OBJS=src/heap_hash_map.c src/count_uniq_elements.c
-CFLAGS=-g -Wall -lm -std=c11 -Wno-pointer-to-int-cast
+CFLAGS=-g -Wall -lm -std=c11 -Wno-pointer-to-int-cast -Wno-memset-elt-size
   
 CC=gcc
 clear_work_dir:
 	rm -r ./work_dir/*
 
-all: clear_work_dir build
+all: build
 
 debug: build gdb-start
 
@@ -26,3 +26,6 @@ clean:
 
 build-with-lib:
 	$(CC) main.c $(CFLAGS) -lHashmap -lm -o main
+
+valgrind: build
+	valgrind ./main

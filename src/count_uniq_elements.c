@@ -7,12 +7,14 @@
 #include <dirent.h>
 #include <stdbool.h>
 #define WORK_DIR "./work_dir"
-#define CHUNK_SIZE 25
+#define CHUNK_SIZE 1000
+#define RESULT_BUF_SIZE CHUNK_SIZE * 2
+#define NEW_FILE_NAME_SIZE 100
 #define LINE_SIZE 10
-#define MAX_FILES_IN_WORK_DIR 200
+#define MAX_FILES_IN_WORK_DIR 500
 
 
-uint32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name);
+int32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name, char* mode);
 
 typedef struct string_arr {
     char** elems;
@@ -26,60 +28,110 @@ void free_strings(const string_arr* string_arr) {
     }
 }
 
-uint64_t read_file(FILE* file, char* buf_line, int* result) {
-    uint64_t idx = 0;
+int64_t read_file(FILE* file, char* buf_line_buf, int* buf) {
+    int64_t idx = 0;
 
-    while (fgets(buf_line, LINE_SIZE, file)) {
-        result[idx] = atoi(buf_line);
+    while (fgets(buf_line_buf, LINE_SIZE, file)) {
+        buf[idx] = atoi(buf_line_buf);
         idx++;
+        if (idx >= CHUNK_SIZE) {
+            return idx;
+        }
     }
 
-    return idx; // len of result arr
+    return idx == 0 ? -1 : idx;
 }
 
-uint32_t merge_files(char* file_path1, char* file_path2, int* buf_a, int* buf_b,
-                     int* result_buf, char* buf_line) {
+int32_t merge_files(char* file_path1, char* file_path2, int* buf_a, int* buf_b,
+                    int* result_buf, char* buf_line) {
     if (file_path1 == NULL || file_path2 == NULL) {
         perror("file path is null\n");
         return -1;
     }
-    // read first file
+
+    // define new file name
+    char new_file_name[NEW_FILE_NAME_SIZE];
+    const int last_digit1 = atoi(&file_path1[strlen(file_path1) - 1]);
+    const int last_digit2 = atoi(&file_path2[strlen(file_path2) - 1]);
+    sprintf(new_file_name, "%s__%d_%d", file_path1, last_digit1, last_digit2);
+
+    // open files to merge
     FILE* file1 = fopen(file_path1, "r");
-    const uint64_t read_a = read_file(file1, buf_line, buf_a);
-    fclose(file1);
-    remove(file_path1);
-    // read second file
+    if (file1 == NULL) {
+        perror("cannot open file 1\n");
+        return -1;
+    }
     FILE* file2 = fopen(file_path2, "r");
-    const uint64_t read_b = read_file(file2, buf_line, buf_b);
-    fclose(file2);
-    remove(file_path2);
+    if (file2 == NULL) {
+        perror("cannot open file 2\n");
+        return -1;
+    }
 
     // merge two buffer in result buffer
     uint64_t idx_a = 0, idx_b = 0, result_idx = 0;
-    while (idx_a < read_a && idx_b < read_b) {
-        if (buf_a[idx_a] < buf_b[idx_b]) {
+    int64_t read_a = 0, read_b = 0;
+    while (read_a != -1 && read_b != -1) {
+        // until achive eof for both files
+        read_a = read_file(file1, buf_line, buf_a);
+        read_b = read_file(file2, buf_line, buf_b);
+        while (idx_a < read_a && idx_b < read_b && read_a != -1 && read_b != -1) {
+            if (buf_a[idx_a] < buf_b[idx_b]) {
+                result_buf[result_idx++] = buf_a[idx_a++];
+            }
+            else {
+                result_buf[result_idx++] = buf_b[idx_b++];
+            }
+
+            if (result_idx >= RESULT_BUF_SIZE) {
+                save_to_file(result_buf, result_idx, new_file_name, "a");
+                result_idx = 0;
+            }
+
+            if (idx_a >= CHUNK_SIZE) {
+                read_a = read_file(file1, buf_line, buf_a);
+                idx_a = 0;
+            }
+
+            if (idx_b >= CHUNK_SIZE) {
+                read_b = read_file(file2, buf_line, buf_b);
+                idx_b = 0;
+            }
+        }
+
+        while (idx_a < read_a && read_a != -1) {
+            if (result_idx >= RESULT_BUF_SIZE) {
+                save_to_file(result_buf, result_idx, new_file_name, "a");
+                result_idx = 0;
+            }
+            if (idx_a >= CHUNK_SIZE) {
+                read_a = read_file(file1, buf_line, buf_a);
+                idx_a = 0;
+            }
             result_buf[result_idx++] = buf_a[idx_a++];
         }
-        else {
+
+        while (idx_b < read_b && read_b != -1) {
+            if (result_idx >= RESULT_BUF_SIZE) {
+                save_to_file(result_buf, result_idx, new_file_name, "a");
+                result_idx = 0;
+            }
+            if (idx_b >= CHUNK_SIZE) {
+                read_b = read_file(file2, buf_line, buf_b);
+                idx_b = 0;
+            }
             result_buf[result_idx++] = buf_b[idx_b++];
         }
     }
 
-    while (idx_a < read_a) {
-        result_buf[result_idx++] = buf_a[idx_a++];
+    if (result_idx != 0) {
+        save_to_file(result_buf, result_idx, new_file_name, "a");
     }
 
-    while (idx_b < read_b) {
-        result_buf[result_idx++] = buf_b[idx_b++];
-    }
+    fclose(file2);
+    fclose(file1);
 
-    // save data from result buffer to a file
-    char new_file_name[100];
-    const int last_digit1 = atoi(&file_path1[strlen(file_path1) - 1]);
-    const int last_digit2 = atoi(&file_path2[strlen(file_path2) - 1]);
-    sprintf(new_file_name, "%s__%d_%d", file_path1, last_digit1, last_digit2);
-    save_to_file(result_buf, result_idx, new_file_name);
-
+    remove(file_path1);
+    remove(file_path2);
     return 0;
 }
 
@@ -92,12 +144,7 @@ int compare(const void* a, const void* b) {
     else return 1;
 }
 
-uint32_t create_one_sorted_file() {
-    DIR* d = opendir(WORK_DIR);
-    if (d == NULL) {
-        perror("cannot open work dir\n");
-        return -1;
-    }
+int32_t create_one_sorted_file(int* result_buf) {
     const uint32_t workdir_len = strlen(WORK_DIR);
     char* buf[MAX_FILES_IN_WORK_DIR];
     string_arr file_name_arr = {.elems = buf};
@@ -113,8 +160,13 @@ uint32_t create_one_sorted_file() {
         return 2;
     }
 
-    struct dirent* dir;
     while (true) {
+        struct dirent* dir;
+        DIR* d = opendir(WORK_DIR);
+        if (d == NULL) {
+            perror("cannot open work dir\n");
+            return -1;
+        }
         uint32_t idx = 0;
         file_name_arr.size = 0;
         // get file names in word dir
@@ -130,11 +182,14 @@ uint32_t create_one_sorted_file() {
             }
         }
 
-        if (file_name_arr.size == 0) break;
+        if (file_name_arr.size <= 1) {
+            closedir(d);
+            free_strings(&file_name_arr);
+            break;
+        }
 
         // merge_files
         char buf_line[LINE_SIZE];
-        int* result_buf = malloc(sizeof(int) * 2 * CHUNK_SIZE);
         uint32_t fwd_idx = 1, bwd_idx = 0;
         while (fwd_idx < file_name_arr.size) {
             if (merge_files(file_name_arr.elems[bwd_idx], file_name_arr.elems[fwd_idx],
@@ -142,10 +197,10 @@ uint32_t create_one_sorted_file() {
                 fprintf(stderr, "cannot merge files. [%s] [%s]\n",
                         file_name_arr.elems[bwd_idx],
                         file_name_arr.elems[fwd_idx]);
-                free(result_buf);
                 free_strings(&file_name_arr);
                 free(buf_s1);
                 free(buf_s2);
+                closedir(d);
                 return -1;
             }
             bwd_idx += 2;
@@ -153,34 +208,28 @@ uint32_t create_one_sorted_file() {
         }
 
         // free strings in sring arr
-
         free_strings(&file_name_arr);
-        free(buf_s1);
-        free(buf_s2);
-        free(result_buf);
+        closedir(d);
     }
 
-    closedir(d);
 
+    free(buf_s2);
+    free(buf_s1);
     return 0;
 }
 
 
-uint32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name) {
+int32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name, char* mode) {
     if (file_name == NULL) {
         perror("file_name is null\n");
         return -1;
     }
-    FILE* new_chunk_file = fopen(file_name, "wa");
+    FILE* new_chunk_file = fopen(file_name, mode);
 
     for (size_t i = 0; i < arr_size; ++i) {
-        if (i == arr_size - 1) {
-            fprintf(new_chunk_file, "%d", arr[i]);
-        }
-        else {
-            fprintf(new_chunk_file, "%d\n", arr[i]);
-        }
+        fprintf(new_chunk_file, "%d\n", arr[i]);
     }
+    fflush(new_chunk_file); //TODO (remove after developing)
     fclose(new_chunk_file);
     return 0;
 }
@@ -188,7 +237,7 @@ uint32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_
 uint32_t save_to_file_with_prefix(const int* arr, const uint64_t arr_size, const uint32_t postfix) {
     char chunk_file_path[50];
     sprintf(chunk_file_path, "%s/file_%d", WORK_DIR, postfix);
-    save_to_file(arr, arr_size, chunk_file_path);
+    save_to_file(arr, arr_size, chunk_file_path, "w");
 
     return 0;
 }
@@ -241,14 +290,24 @@ uint64_t count_uniq_elements(const char* const file_path) {
     }
 
     free(chunk_buf);
+    fclose(file);
 
-    // recursevly merge files
-    const uint32_t res = create_one_sorted_file(WORK_DIR);
-    if (res != 0) {
+    // merge workdir files in one big sorted file
+    int* result_buf = malloc(sizeof(int) * RESULT_BUF_SIZE);
+    if (result_buf == NULL) {
+        perror("no memory for result_buf\n");
         return -1;
     }
+    const int32_t res = create_one_sorted_file(result_buf);
+    if (res != 0) {
+        perror("cannot create one big sorted file\n");
+        return -1;
+    }
+
+
     // count unique elements in big sorted files
-    // TODO
-    fclose(file);
+    //TODO
+
+    free(result_buf);
     return 0;
 }

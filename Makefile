@@ -1,5 +1,5 @@
 OBJS=src/heap_hash_map.c src/count_uniq_elements.c
-CFLAGS=-g -Wall -lm -std=c11 -Wno-pointer-to-int-cast -Wno-memset-elt-size
+CFLAGS=-g -Wall -lm -std=c11 -Wno-pointer-to-int-cast -Wno-memset-elt-size -fno-omit-frame-pointer
   
 CC=gcc
 clear_work_dir:

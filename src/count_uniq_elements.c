@@ -327,12 +327,12 @@ uint64_t count_uniq_elements(const char* const file_path) {
             break;
         }
     }
+    closedir(d);
     int64_t read = 0;
     FILE* sorted_file = fopen(sorted_file_name, "r");
     uint64_t unique_count = 0;
-    uint64_t slow = 0, fast = 1;
     pair_uniq_count pair = {.count = 0, .last = 0};
-    while ((read = read_file(sorted_file, buf_line, result_buf)) != -1 && fast < read) {
+    while ((read = read_file(sorted_file, buf_line, result_buf)) != -1) {
         unique_counter(result_buf, read, &pair);
         unique_count += pair.count;
         pair.count = 0;

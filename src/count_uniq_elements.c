@@ -7,19 +7,26 @@
 #include <dirent.h>
 #include <stdbool.h>
 #define WORK_DIR "./work_dir"
-#define CHUNK_SIZE 1000
+#define CHUNK_SIZE 25
 #define RESULT_BUF_SIZE CHUNK_SIZE * 2
 #define NEW_FILE_NAME_SIZE 100
 #define LINE_SIZE 10
 #define MAX_FILES_IN_WORK_DIR 500
 
 
-int32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name, char* mode);
+typedef struct pair_uniq_count {
+    uint64_t last;
+    uint64_t count;
+} pair_uniq_count;
 
 typedef struct string_arr {
     char** elems;
     uint32_t size;
 } string_arr;
+
+void unique_counter(int* buf, int64_t read, pair_uniq_count* pair);
+
+int32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_name, char* mode);
 
 void free_strings(const string_arr* string_arr) {
     if (string_arr == NULL) return;
@@ -253,7 +260,7 @@ uint64_t count_uniq_elements(const char* const file_path) {
 
     // open file
     FILE* file = fopen(file_path, "r");
-    if (file == NULL) return 1;
+    if (file == NULL) return -1;
 
     // prepare buffers for reading from file
     int* chunk_buf = malloc(sizeof(int) * CHUNK_SIZE);
@@ -306,8 +313,53 @@ uint64_t count_uniq_elements(const char* const file_path) {
 
 
     // count unique elements in big sorted files
-    //TODO
+    struct dirent* dir;
+    DIR* d = opendir(WORK_DIR);
+    if (d == NULL) {
+        perror("cannot open work dir\n");
+        return -1;
+    }
+    // get file names in word dir
+    char sorted_file_name[300];
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_name[0] != '.') {
+            sprintf(sorted_file_name, "%s/%s", WORK_DIR, dir->d_name);
+            break;
+        }
+    }
+    int64_t read = 0;
+    FILE* sorted_file = fopen(sorted_file_name, "r");
+    uint64_t unique_count = 0;
+    uint64_t slow = 0, fast = 1;
+    pair_uniq_count pair = {.count = 0, .last = 0};
+    while ((read = read_file(sorted_file, buf_line, result_buf)) != -1 && fast < read) {
+        unique_counter(result_buf, read, &pair);
+        unique_count += pair.count;
+        pair.count = 0;
+    }
+    unique_counter(result_buf, read, &pair);
+    unique_count += pair.count;
 
+    fclose(sorted_file);
     free(result_buf);
-    return 0;
+    return unique_count;
+}
+
+void unique_counter(int* buf, int64_t read, pair_uniq_count* pair) {
+    uint64_t slow = 0, fast = 1, result = 0;
+    if (buf[slow] != pair->last && read != -1) {
+        result++;
+    }
+    while (fast < read && read != -1) {
+        if (buf[slow++] != buf[fast++]) {
+            result++;
+        }
+    }
+    if (read != -1) {
+        pair->last = buf[read - 1];
+    }
+    else {
+        pair->last = 0;
+    }
+    pair->count = result;
 }

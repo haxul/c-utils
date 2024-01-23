@@ -7,11 +7,11 @@
 #include <dirent.h>
 #include <stdbool.h>
 #define WORK_DIR "./work_dir"
-#define CHUNK_SIZE 25
+#define CHUNK_SIZE 250000
 #define RESULT_BUF_SIZE CHUNK_SIZE * 2
 #define NEW_FILE_NAME_SIZE 100
 #define LINE_SIZE 10
-#define MAX_FILES_IN_WORK_DIR 500
+#define MAX_FILES_IN_WORK_DIR 500000
 
 
 typedef struct pair_uniq_count {
@@ -236,7 +236,6 @@ int32_t save_to_file(const int* arr, const uint64_t arr_size, const char* file_n
     for (size_t i = 0; i < arr_size; ++i) {
         fprintf(new_chunk_file, "%d\n", arr[i]);
     }
-    fflush(new_chunk_file); //TODO (remove after developing)
     fclose(new_chunk_file);
     return 0;
 }

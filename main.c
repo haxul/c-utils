@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#define FILE_PATH "/home/haxul/Development/clanguage/hash-map/test_data/nums1.txt"
+#define FILE_PATH "/home/haxul/Development/clanguage/hash-map/test_data/nums.txt"
 
 char* stringh(char* str) {
     size_t len = strlen(str);
@@ -35,6 +35,7 @@ uint32_t generate_file(const char* file_path) {
 
 int main() {
     //generate_file(FILE_PATH);
-    count_uniq_elements(FILE_PATH);
+    uint64_t res = count_uniq_elements(FILE_PATH);
+    printf("result %lu\n", res);
     return 0;
 }

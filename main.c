@@ -19,7 +19,7 @@ char* stringh(char* str) {
 uint32_t generate_file(const char* file_path) {
     srand(time(NULL));
     uint32_t count = 0;
-    const uint32_t size = 10000000000000;
+    const uint32_t size = 100;
     FILE* file = fopen(file_path, "wa");
     if (file == NULL) {
         perror("cannot open file\n");
@@ -35,8 +35,6 @@ uint32_t generate_file(const char* file_path) {
 
 
 int main() {
-    //    generate_file(FILE_PATH);
-    printf("pid: %d\n", getpid());
     uint64_t res = count_uniq_elements(FILE_PATH);
     printf("result %lu\n", res);
 

@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #define WORK_DIR "./work_dir"
-#define CHUNK_SIZE 250000
+#define CHUNK_SIZE 25
 #define RESULT_BUF_SIZE CHUNK_SIZE * 2
 #define NEW_FILE_NAME_SIZE 100
 #define LINE_SIZE 10
